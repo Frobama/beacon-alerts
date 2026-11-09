@@ -1,0 +1,37 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: bufbuild/buf-setup-action@v1
+        with:
+          github_token: ${{ github.token }}
+
+      - name: Generar stubs de contratos
+        run: make proto
+
+      # Los pasos siguientes se activan solos cuando exista el proyecto Go (Fase 1).
+      - uses: actions/setup-go@v5
+        if: hashFiles('go.mod') != ''
+        with:
+          go-version-file: go.mod
+
+      - name: Vet
+        if: hashFiles('go.mod') != ''
+        run: go vet ./...
+
+      - name: Tests con cobertura
+        if: hashFiles('go.mod') != ''
+        run: go test ./... -race -coverprofile=coverage.out
+
+      - name: Build de imagen Docker
+        if: hashFiles('Dockerfile') != ''
+        run: docker build -t beacon-alerts:ci .

@@ -1,0 +1,8 @@
+/bin/
+/gen/
+*.test
+*.out
+coverage.*
+.env
+.idea/
+.vscode/
